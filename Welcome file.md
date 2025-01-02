@@ -168,5 +168,17 @@ Le code parcourt l'ensemble du dictionnaire pour réaliser la comparaison de HMA
 
 ## Exploitation
 
-You can save any file of the workspace to **Google Drive**, **Dropbox** or **GitHub** by opening the **Synchronize** sub-menu and clicking **Save on**. Even if a file in the workspace is already synced, you can save it to another location. StackEdit can sync one file with multiple locations and accounts.
+J'enregistre ce script sous le nom `camah.cs` (car il fait l'inverse de `hamac.py`).
+Le script est ensuite lancé depuis une commande développeur :
 
+    dotnet-script camah.cs
+Il testera un peu plus de 4910000 mots de passe en quelques secondes, avant de livrer son verdict :
+
+    Tested 4910000 passwords...
+    
+    Found password: omgh4xx0r
+    
+    Decrypted message:
+    FCSC{5bb0780f8af31f69b4eccf18870f493628f135045add3036f35a4e3a423976d6}
+
+Fin de l'épreuve :) !
