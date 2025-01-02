@@ -51,105 +51,122 @@ Afin de déchiffrer ce fichier, il faudra élaborer un script qui, pour chaque m
 
 Si les HMAC correspondent, nous aurons trouvé le mot de passe. Il ne restera alors qu'à déchiffrer la valeur de "c" en utilisant "iv" et le mot de passe trouvé.
 
-## Open a file
+## Développement du script
 
-You can open a file from **Google Drive**, **Dropbox** or **GitHub** by opening the **Synchronize** sub-menu and clicking **Open from**. Once opened in the workspace, any modification in the file will be automatically synced.
+Etant plus à l'aise avec C# qu'avec Python, je commence par développer un script dont les entrées sont le fichier `output.txt` et le dictionnaire `rockyou.txt`.
 
-## Save a file
+Le code parcourt l'ensemble du dictionnaire pour réaliser la comparaison de HMAC et déchiffre le message si un mot de passe est trouvé. Une fonction est dédiée à ce déchiffrage en fin de code.
+
+    using System;
+    using System.IO;
+    using System.Text;
+    using System.Security.Cryptography;
+    using System.Text.Json;
+    
+    // Lire le fichier output.txt
+    Console.WriteLine($"Reading the ouptut.txt file...");
+    string jsonContent = File.ReadAllText("output.txt");
+    var output = JsonSerializer.Deserialize<Output>(jsonContent);
+    
+    // Convertir les valeurs hexadécimales en bytes
+    byte[] iv = Convert.FromHexString(output.iv);
+    byte[] ciphertext = Convert.FromHexString(output.c);
+    byte[] targetHmac = Convert.FromHexString(output.h);
+    
+    // Message constant pour le HMAC
+    byte[] hmacMessage = Encoding.ASCII.GetBytes("FCSC2022");
+    Console.WriteLine($"Starting BFA using RockYou...");
+    // Démarrer une BFA en testant chaque ligne du fichier
+    using (var reader = new StreamReader("rockyou.txt"))
+    {
+        string password;
+        int count = 0;
+        while ((password = reader.ReadLine()) != null)
+        {
+            count++;
+            if (count % 10000 == 0)
+                Console.WriteLine($"Tested {count} passwords...");
+    
+            try
+            {
+                byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+    
+                // Calculer le HMAC avec le mot de passe actuel
+                byte[] hmac = ComputeHMAC(passwordBytes, hmacMessage);
+    
+                // Vérifier si le HMAC correspond
+                if (BitConverter.ToString(hmac).Replace("-", "").ToLower() == output.h)
+                {
+                    Console.WriteLine($"\nFound password: {password}");
+    
+                    // Déchiffrer le message
+                    try
+                    {
+                        string decryptedText = DecryptAES(passwordBytes, iv, ciphertext);
+                        Console.WriteLine("\nDecrypted message:");
+                        Console.WriteLine(decryptedText);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Decryption failed: {ex.Message}");
+                    }
+                    return;
+                }
+                
+            }
+            catch (Exception)
+            {
+                // Ignorer les mots de passe qui causent des erreurs
+                continue;
+            }
+        }
+    }
+    
+    Console.WriteLine("Password not found!");
+    
+    public class Output
+    {
+        public string iv { get; set; }
+        public string c { get; set; }
+        public string h { get; set; }
+    }
+    
+    static byte[] ComputeHMAC(byte[] key, byte[] message)
+    {
+        using (var hmac = new HMACSHA256(key))
+        {
+            return hmac.ComputeHash(message);
+        }
+    }
+    
+    static byte[] ComputeSHA256(byte[] input)
+    {
+        using (var sha256 = SHA256.Create())
+        {
+            return sha256.ComputeHash(input);
+        }
+    }
+    
+    static string DecryptAES(byte[] key, byte[] iv, byte[] ciphertext)
+    {
+        using (var aes = Aes.Create())
+        {
+            aes.Key = ComputeSHA256(key); // La clé est le hash SHA256 du mot de passe
+            aes.IV = iv;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+    
+            using (var decryptor = aes.CreateDecryptor())
+            using (var msDecrypt = new MemoryStream(ciphertext))
+            using (var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+            using (var srDecrypt = new StreamReader(csDecrypt))
+            {
+                return srDecrypt.ReadToEnd();
+            }
+        }
+    }
+
+## Exploitation
 
 You can save any file of the workspace to **Google Drive**, **Dropbox** or **GitHub** by opening the **Synchronize** sub-menu and clicking **Save on**. Even if a file in the workspace is already synced, you can save it to another location. StackEdit can sync one file with multiple locations and accounts.
-
-## Synchronize a file
-
-Once your file is linked to a synchronized location, StackEdit will periodically synchronize it by downloading/uploading any modification. A merge will be performed if necessary and conflicts will be resolved.
-
-If you just have modified your file and you want to force syncing, click the **Synchronize now** button in the navigation bar.
-
-> **Note:** The **Synchronize now** button is disabled if you have no file to synchronize.
-
-## Manage file synchronization
-
-Since one file can be synced with multiple locations, you can list and manage synchronized locations by clicking **File synchronization** in the **Synchronize** sub-menu. This allows you to list and remove synchronized locations that are linked to your file.
-
-
-# Publication
-
-Publishing in StackEdit makes it simple for you to publish online your files. Once you're happy with a file, you can publish it to different hosting platforms like **Blogger**, **Dropbox**, **Gist**, **GitHub**, **Google Drive**, **WordPress** and **Zendesk**. With [Handlebars templates](http://handlebarsjs.com/), you have full control over what you export.
-
-> Before starting to publish, you must link an account in the **Publish** sub-menu.
-
-## Publish a File
-
-You can publish your file by opening the **Publish** sub-menu and by clicking **Publish to**. For some locations, you can choose between the following formats:
-
-- Markdown: publish the Markdown text on a website that can interpret it (**GitHub** for instance),
-- HTML: publish the file converted to HTML via a Handlebars template (on a blog for example).
-
-## Update a publication
-
-After publishing, StackEdit keeps your file linked to that publication which makes it easy for you to re-publish it. Once you have modified your file and you want to update your publication, click on the **Publish now** button in the navigation bar.
-
-> **Note:** The **Publish now** button is disabled if your file has not been published yet.
-
-## Manage file publication
-
-Since one file can be published to multiple locations, you can list and manage publish locations by clicking **File publication** in the **Publish** sub-menu. This allows you to list and remove publication locations that are linked to your file.
-
-
-# Markdown extensions
-
-StackEdit extends the standard Markdown syntax by adding extra **Markdown extensions**, providing you with some nice features.
-
-> **ProTip:** You can disable any **Markdown extension** in the **File properties** dialog.
-
-
-## SmartyPants
-
-SmartyPants converts ASCII punctuation characters into "smart" typographic punctuation HTML entities. For example:
-
-|                |ASCII                          |HTML                         |
-|----------------|-------------------------------|-----------------------------|
-|Single backticks|`'Isn't this fun?'`            |'Isn't this fun?'            |
-|Quotes          |`"Isn't this fun?"`            |"Isn't this fun?"            |
-|Dashes          |`-- is en-dash, --- is em-dash`|-- is en-dash, --- is em-dash|
-
-
-## KaTeX
-
-You can render LaTeX mathematical expressions using [KaTeX](https://khan.github.io/KaTeX/):
-
-The *Gamma function* satisfying $\Gamma(n) = (n-1)!\quad\forall n\in\mathbb N$ is via the Euler integral
-
-$$
-\Gamma(z) = \int_0^\infty t^{z-1}e^{-t}dt\,.
-$$
-
-> You can find more information about **LaTeX** mathematical expressions [here](http://meta.math.stackexchange.com/questions/5020/mathjax-basic-tutorial-and-quick-reference).
-
-
-## UML diagrams
-
-You can render UML diagrams using [Mermaid](https://mermaidjs.github.io/). For example, this will produce a sequence diagram:
-
-```mermaid
-sequenceDiagram
-Alice ->> Bob: Hello Bob, how are you?
-Bob-->>John: How about you John?
-Bob--x Alice: I am good thanks!
-Bob-x John: I am good thanks!
-Note right of John: Bob thinks a long<br/>long time, so long<br/>that the text does<br/>not fit on a row.
-
-Bob-->Alice: Checking with John...
-Alice->John: Yes... John, how are you?
-```
-
-And this will produce a flow chart:
-
-```mermaid
-graph LR
-A[Square Rect] -- Link text --> B((Circle))
-A --> C(Round Rect)
-B --> D{Rhombus}
-C --> D
-```
 
