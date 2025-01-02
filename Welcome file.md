@@ -2,66 +2,54 @@
 
 Ce document a pour objet de fournir une solution à l'épreuve crypto "[hamac](https://hackropole.fr/fr/challenges/crypto/fcsc2022-crypto-hamac/)" d'hackropole.
 
-# Phase de reconnaissance
+# Phase d'étude
 
 Deux fichiers sont fournis pour cette épreuve :
 
- - Un fichier python hamac.py
+ - Un fichier python `hamac.py`
  - Un fichier json comprenant trois éléments ("iv", "c" et "h")
 
 ## Etude du code python
 
-    # python3 -m pip install pycryptodome
-    import json
-    from Crypto.Cipher import AES
-    from Crypto.Util.Padding import pad
-    from Crypto.Hash import HMAC, SHA256
-    from Crypto.Random import get_random_bytes
-    
+Le code commence par demander un mot de passe, puis génère un HMAC (Hash-based Message Authentication Code) basé sur SHA-256. Une donnée fixe, `b"FCSC2022"`est mise à jour dans l'instance HMAC pour produire un hash unique.
+
     print("Enter your password")
     password = input(">>> ").encode()
     h = HMAC.new(password, digestmod = SHA256)
     h.update(b"FCSC2022")
-    
+Un Vecteur d'Initialisation (IV) aléatoire de 16 octets est généré. L'IV est nécessaire pour le mode CBC. Ensuite, une clé de 256 bits (32 octets) est dérivée du mot de passe en appliquant SHA-256.
+
     iv = get_random_bytes(16)
     k  = SHA256.new(password).digest()
+Le contenu d'un fichier `flag.txt` est lu et rempli pour que sa taille soit un multiple de 16 octets (taille des blocs AES). Le contenu est ensuite chiffré avec AES en mode CBC, en utilisant la clé dérivée et le vecteur d'initialisation.
+
     c  = AES.new(k, AES.MODE_CBC, iv = iv).encrypt(pad(open("flag.txt", "rb").read(), 16))
-    r = {
-    	"iv": iv.hex(),
-    	"c": c.hex(),
-    	"h": h.hexdigest(),
-    }
+
+Enfin, un dictionnaire contenant les éléments suivants est créé  puis sauvegardé :
+-   `iv` : Le vecteur d'initialisation, encodé en hexadécimal ;
+-   `c` : Le texte chiffré, encodé en hexadécimal ;
+-   `h` : Le HMAC calculé, en format hexadécimal.
+
+Le fichier généré est `output.txt`, fourni dans l'épreuve.
+
+    r = { "iv": iv.hex(), "c": c.hex(), "h": h.hexdigest(), }
     open("output.txt", "w").write(json.dumps(r))
 
+## Elaboration d'un mode d'attaque
 
-## Switch to another file
+Sans connaître le mot de passe utilisé, il est impossible de déchiffrer le fichier fourni. L'auteur nous met cependant sur la voie avec un indice dans la description de l'épreuve :
 
-All your files and folders are presented as a tree in the file explorer. You can switch from one to another by clicking a file in the tree.
+> Connaissez-vous l’existence de `rockyou` ?
 
-## Rename a file
+Il semble donc que la solution réside dans l'utilisation du fameux dictionnaire de mot de passe afin de réaliser un "Brut Force Attack". Il y a fort à parier que le mot de passe choisi a été extrait du dictionnaire pour nous faciliter la tâche ...
 
-You can rename the current file by clicking the file name in the navigation bar or by clicking the **Rename** button in the file explorer.
+# Phase de réalisation
 
-## Delete a file
+Afin de déchiffrer ce fichier, il faudra élaborer un script qui, pour chaque mot de passe présent dans le dictionnaire :
+- Calcul le HMAC du mot de passe testé en reproduisant la logique de chiffrement utilisée
+- Compare le HMAC obtenu à celui du JSON
 
-You can delete the current file by clicking the **Remove** button in the file explorer. The file will be moved into the **Trash** folder and automatically deleted after 7 days of inactivity.
-
-## Export a file
-
-You can export the current file by clicking **Export to disk** in the menu. You can choose to export the file as plain Markdown, as HTML using a Handlebars template or as a PDF.
-
-
-# Synchronization
-
-Synchronization is one of the biggest features of StackEdit. It enables you to synchronize any file in your workspace with other files stored in your **Google Drive**, your **Dropbox** and your **GitHub** accounts. This allows you to keep writing on other devices, collaborate with people you share the file with, integrate easily into your workflow... The synchronization mechanism takes place every minute in the background, downloading, merging, and uploading file modifications.
-
-There are two types of synchronization and they can complement each other:
-
-- The workspace synchronization will sync all your files, folders and settings automatically. This will allow you to fetch your workspace on any other device.
-	> To start syncing your workspace, just sign in with Google in the menu.
-
-- The file synchronization will keep one file of the workspace synced with one or multiple files in **Google Drive**, **Dropbox** or **GitHub**.
-	> Before starting to sync files, you must link an account in the **Synchronize** sub-menu.
+Si les HMAC correspondent, nous aurons trouvé le mot de passe. Il ne restera alors qu'à déchiffrer la valeur de "c" en utilisant "iv" et le mot de passe trouvé.
 
 ## Open a file
 
@@ -164,3 +152,4 @@ A --> C(Round Rect)
 B --> D{Rhombus}
 C --> D
 ```
+
