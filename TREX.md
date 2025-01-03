@@ -45,7 +45,7 @@ Voici le code de la classe qui réalise cette action :
             E = AES.new(self.key, AES.MODE_CBC, iv = self.iv)
             return self.iv + E.encrypt(pad(data, 16))
 
-La dérivation est réalisée 31337 fois - un clin d'œil de l'auteur la L33t.
+La dérivation est réalisée 31337 fois - un clin d'œil de l'auteur au "L33t".
 Enfin, le flag est chiffré en AES CBC et il est écrit, à la suite de l'IV, dans un fichier qui nous est fourni.
 
 ## Analyse mathématiques
