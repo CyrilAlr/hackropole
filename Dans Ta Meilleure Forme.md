@@ -22,10 +22,10 @@ Je commence par développer un script Python utilisant scipy pour décoder les t
 - Utilisation de la transformée de Fourier (spectrogramme) pour détecter les fréquences
 - Matrices de fréquences DTMF standard (697-1633 Hz)
 - Paramètres optimisés :
-- Fenêtre d'analyse de 30ms
-- Tolérance de fréquence de 30 Hz (même si les signaux semblent de bonne qualité)
-- Seuil de puissance adaptatif
-- Vérification de la durée minimale des tons
+	- Fenêtre d'analyse de 30ms
+	- Tolérance de fréquence de 30 Hz (même si les signaux semblent de bonne qualité)
+	- Seuil de puissance adaptatif
+	- Vérification de la durée minimale des tons
 
 [Script de détection DTMF_detect.py](https://github.com/CyrilAlr/hackropole/blob/master/DTMF_Detect.py)
 
