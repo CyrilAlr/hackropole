@@ -13,7 +13,8 @@ L'observation du fichier dans Audacity a révélé une série claire de signaux 
 
 ![Aperçu du signal dans Audacity](https://github.com/CyrilAlr/hackropole/blob/master/DTMF_signal_1.png)
 
-Une rapide analyse de spectre montre des piques de fréquences qui se détachent nettement et qui nous permettront rapidement de retrouver les touches à pour chaque partie du signal.
+Une rapide analyse de spectre montre des piques de fréquences qui se détachent nettement et qui nous permettront rapidement de retrouver les touches pour chaque partie du signal.
+
 ![Analyse de spectre dans Audacity](https://github.com/CyrilAlr/hackropole/blob/master/DTMF_signal_2.png)
 
 # Etape 1 : extraction de la séquence DTMF
